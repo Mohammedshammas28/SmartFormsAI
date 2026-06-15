@@ -264,6 +264,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const customEmails = customEmailsInput.value.trim();
         if (customEmails) {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'custom_recipients';
+            hiddenInput.value = customEmails;
+            hiddenRecipientsContainer.appendChild(hiddenInput);
             hasRecipient = true;
         }
 
