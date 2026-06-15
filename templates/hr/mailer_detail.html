@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Campaign Details — SmartForms AI{% endblock %}
+{% block page_title %}Campaign Details{% endblock %}
+
+{% block topbar_actions %}
+<div style="display: flex; gap: 0.5rem;">
+    <a href="{{ url_for('hr_mailer.history') }}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 0.5rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to History
+    </a>
+    <a href="{{ url_for('hr_mailer.index') }}" class="btn btn-primary btn-sm" style="display: flex; align-items: center; gap: 0.5rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+        Compose New
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-2" style="grid-template-columns: 0.8fr 1.2fr; gap: 2rem; align-items: start;">
+    <!-- Campaign Info Card -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom: 1.25rem;">Campaign Summary</h2>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Subject</label>
+                    <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">{{ campaign.subject }}</div>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Date Sent</label>
+                    <div style="font-weight: 500; font-size: 0.95rem; color: var(--text-secondary);">
+                        {{ (campaign.local_created_at|string)[:16] if campaign.local_created_at else '' }}
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Sender</label>
+                    <div style="font-weight: 500; font-size: 0.95rem; color: var(--text-secondary);">{{ campaign.sender_name }}</div>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Recipients Summary</label>
+                    <div style="font-size: 0.85rem; color: var(--text-tertiary); max-height: 100px; overflow-y: auto; border: 1px solid var(--border); padding: 0.5rem; border-radius: var(--radius); background: rgba(0,0,0,0.01);">
+                        {{ campaign.recipients }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SMTP Dispatch Notice Card -->
+        <div class="card" style="background: rgba(99, 102, 241, 0.03); border: 1px dashed var(--primary-light);">
+            <div style="display: flex; gap: 0.75rem;">
+                <span style="font-size: 1.25rem;">📡</span>
+                <div>
+                    <h4 style="margin: 0 0 0.25rem 0; font-size: 0.9rem; font-weight: 600; color: var(--primary);">Real Email Dispatch Dashboard</h4>
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px;">
+                        This campaign is being sent asynchronously in the background via the configured SMTP server. 
+                    </p>
+                    <button onclick="window.location.reload();" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; height: auto;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                        Refresh Statuses
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recipients Detail List -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0;">Recipient Details ({{ recipients|length }})</h2>
+        
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for r in recipients %}
+            <div class="card" style="padding: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1rem; font-weight: 600;">{{ r.recipient_name }}</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ r.recipient_email }}</span>
+                    </div>
+                    {% if r.status == 'Sent' %}
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success); font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
+                        Sent
+                    </span>
+                    {% elif r.status == 'Pending' %}
+                    <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #d97706; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
+                        Pending
+                    </span>
+                    {% else %}
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px;" title="{{ r.status }}">
+                        {{ r.status }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-bottom: 0.5rem; display: block;">Personalized Body</label>
+                    <div style="background: rgba(0,0,0,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; font-size: 0.875rem; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; font-family: 'Inter', sans-serif;">{{ r.personalized_body }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

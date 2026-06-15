@@ -26,14 +26,15 @@ def add_employee():
     name = request.form.get('name')
     position = request.form.get('position')
     department = request.form.get('department')
+    email = request.form.get('email', '').strip()
     manager_id = request.form.get('manager_id')
     
     if not manager_id:
         manager_id = None
         
     if name and position:
-        db.execute('INSERT INTO employees (name, position, department, manager_id) VALUES (?, ?, ?, ?)',
-                   (name, position, department, manager_id))
+        db.execute('INSERT INTO employees (name, position, department, email, manager_id) VALUES (?, ?, ?, ?, ?)',
+                   (name, position, department, email, manager_id))
         db.commit()
         flash('Employee added successfully.', 'success')
     else:
@@ -49,14 +50,15 @@ def edit_employee(id):
         name = request.form.get('name')
         position = request.form.get('position')
         department = request.form.get('department')
+        email = request.form.get('email', '').strip()
         manager_id = request.form.get('manager_id')
         
         if not manager_id or str(manager_id) == str(id): # Prevent self-management
             manager_id = None
             
         if name and position:
-            db.execute('UPDATE employees SET name=?, position=?, department=?, manager_id=? WHERE id=?',
-                       (name, position, department, manager_id, id))
+            db.execute('UPDATE employees SET name=?, position=?, department=?, email=?, manager_id=? WHERE id=?',
+                       (name, position, department, email, manager_id, id))
             db.commit()
             flash('Employee updated successfully.', 'success')
             return redirect(url_for('hr_orgchart.index'))
@@ -95,6 +97,7 @@ def api_data():
             'name': emp['name'],
             'position': emp['position'],
             'department': emp['department'],
+            'email': emp['email'] if 'email' in emp.keys() else '',
             'manager_id': str(emp['manager_id']) if emp['manager_id'] else ''
         })
     return jsonify(data)

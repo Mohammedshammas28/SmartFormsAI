@@ -514,3 +514,174 @@ def analyze_responses(api_key: str, form_title: str, questions: list, responses_
     # Fallback: built-in stats analysis
     print("[AI] Using built-in template analysis engine.")
     return analyze_responses_template(form_title, questions, responses_data)
+
+
+# ─────────────────────────────────────────────
+# Public API — Email Drafting
+# ─────────────────────────────────────────────
+
+GEMINI_EMAIL_DRAFT_SYSTEM = """You are a world-class HR Communications Director and expert copywriter.
+Your task is to draft a highly professional, engaging, and polished company email based on the user's prompt.
+
+The email must feel personal, authentic, and clear. Avoid robotic or overly generic template phrases.
+
+You MUST output ONLY a valid JSON object in the following exact format, with no other text, markdown blocks, or commentary around it:
+{
+  "subject": "A compelling, clear, and professional subject line",
+  "body": "The email body text. Use double newlines (\\n\\n) to separate paragraphs."
+}
+
+Important constraints for the "body":
+1. You MUST address the recipient using the `{name}` placeholder at the very beginning (e.g., 'Dear {name},' or 'Hi {name},' depending on the tone).
+2. The email must have a clean, logical structure:
+   - A warm, engaging opening sentence.
+   - A detailed body section explaining the core message clearly. If appropriate, use styled plain-text bullet points (e.g., '• Point 1\\n• Point 2').
+   - A clear call-to-action or next steps (if applicable).
+   - A warm and professional closing statement.
+   - A professional signature block (e.g., 'Best regards,\\nHR Operations Team' or similar).
+3. The tone should match the context: warm and welcoming for onboarding/celebrations, clear and direct for announcements, polite yet urgent for reminders/deadlines."""
+
+
+def draft_email_template(prompt: str) -> dict:
+    """Generate an email draft using the built-in template engine (no API needed)."""
+    p_lower = prompt.lower()
+    
+    # 1. Determine a good subject line based on keywords
+    if any(kw in p_lower for kw in ["welcome", "onboarding", "new hire", "join"]):
+        subject = "Welcome to the Team!"
+    elif any(kw in p_lower for kw in ["reminder", "deadline", "due date"]):
+        subject = "Action Required: Upcoming Deadline / Reminder"
+    elif any(kw in p_lower for kw in ["meeting", "sync", "call", "schedule", "tomorrow", "calendar"]):
+        subject = "Meeting Announcement & Schedule Update"
+    elif any(kw in p_lower for kw in ["holiday", "celebration", "festival", "event", "closure", "office"]):
+        subject = "Notice: Holiday Schedule & Office Update"
+    elif any(kw in p_lower for kw in ["policy", "procedure", "update", "handbook"]):
+        subject = "Important Update: Policy & Guidelines"
+    elif any(kw in p_lower for kw in ["survey", "feedback", "appraisal", "review"]):
+        subject = "Your Feedback Requested: Team Development & Alignment"
+    else:
+        # Generate a clean subject from the prompt prefix
+        words = prompt.split()
+        if len(words) > 5:
+            subject = "HR Update: " + " ".join(words[:5]) + "..."
+        else:
+            subject = "HR Update: " + prompt
+            
+    # Remove common prefix commands from the prompt to make it a natural sentence
+    clean_prompt = prompt.strip()
+    prefixes_to_remove = [
+        "draft an email about", "draft a welcome email about", "draft a welcome email for",
+        "draft an email to", "draft a reminder about", "draft a meeting request for",
+        "write an email about", "write an email to", "write a reminder about",
+        "send an email about", "send a reminder about", "tell employees that",
+        "draft a", "draft an", "write a", "write an", "email about", "remind everyone that",
+        "remind employees that", "inform everyone that", "inform employees that"
+    ]
+    
+    for prefix in sorted(prefixes_to_remove, key=len, reverse=True):
+        if clean_prompt.lower().startswith(prefix):
+            clean_prompt = clean_prompt[len(prefix):].strip()
+            
+    # Capitalize the first letter of the cleaned prompt
+    if clean_prompt:
+        clean_prompt = clean_prompt[0].upper() + clean_prompt[1:]
+        
+    # Ensure it ends with a period if not ending with punctuation
+    if clean_prompt and clean_prompt[-1] not in ['.', '!', '?']:
+        clean_prompt += '.'
+
+    # 2. Build the email body incorporating the clean prompt details
+    if any(kw in p_lower for kw in ["welcome", "onboarding", "new hire", "join"]):
+        body = (
+            "Dear {name},\n\n"
+            "We are absolutely thrilled to welcome you to our organization! Your arrival marks an exciting new chapter for our department, and we are confident that your skills, background, and perspective will make a tremendous impact here.\n\n"
+            f"Here is a brief update regarding your upcoming transition: {clean_prompt}\n\n"
+            "Over the next few days, we will guide you through our onboarding process, introduce you to the team, and help you get settled into your role. We want to ensure you have all the tools, resources, and support needed to succeed from day one.\n\n"
+            "If you have any questions or need anything at all before your official start date, please do not hesitate to reach out to us.\n\n"
+            "Once again, welcome to the family! We look forward to achieving great things together.\n\n"
+            "Best regards,\n"
+            "People & Culture Team"
+        )
+    elif any(kw in p_lower for kw in ["reminder", "deadline", "due date"]):
+        body = (
+            "Dear {name},\n\n"
+            "This is a quick reminder regarding an important action item or upcoming deadline that requires your attention.\n\n"
+            f"Action Required: {clean_prompt}\n\n"
+            "To help us keep our operations running smoothly and stay on track, please review the requirements and complete this task at your earliest convenience.\n\n"
+            "If you have already completed this, please disregard this message. If you encounter any issues or need extra support to meet the deadline, please let us know so we can assist you.\n\n"
+            "Thank you for your prompt attention and cooperation.\n\n"
+            "Best regards,\n"
+            "HR Operations Team"
+        )
+    elif any(kw in p_lower for kw in ["meeting", "sync", "call", "schedule", "tomorrow", "calendar"]):
+        body = (
+            "Dear {name},\n\n"
+            "We have scheduled an upcoming meeting to sync and align on our latest initiatives. Your presence and input are highly valued.\n\n"
+            f"Meeting Details & Context: {clean_prompt}\n\n"
+            "Please check your calendar for the invite link. If you have any agenda items you would like to add, or if you have a scheduling conflict, please reach out as soon as possible so we can adjust accordingly.\n\n"
+            "Looking forward to a productive discussion.\n\n"
+            "Warm regards,\n"
+            "HR Coordination Team"
+        )
+    elif any(kw in p_lower for kw in ["holiday", "celebration", "festival", "event", "closure", "office"]):
+        body = (
+            "Dear {name},\n\n"
+            "As we approach the upcoming holiday season or special event, we wanted to share some details and office schedule updates with you.\n\n"
+            f"Announcements & Details: {clean_prompt}\n\n"
+            "We hope this occasion gives you a wonderful opportunity to unwind, rest, and celebrate with your loved ones. Thank you for your incredible hard work that makes events like these possible.\n\n"
+            "Have a fantastic time, and stay safe!\n\n"
+            "Warmest wishes,\n"
+            "The HR Team"
+        )
+    elif any(kw in p_lower for kw in ["survey", "feedback", "appraisal", "review"]):
+        body = (
+            "Dear {name},\n\n"
+            "We are constantly working to improve our workplace culture and operational efficiency, and your feedback is a vital part of that journey.\n\n"
+            f"Feedback / Survey Details: {clean_prompt}\n\n"
+            "Please take a few minutes to share your honest thoughts, suggestions, and feedback. Your insights help us make meaningful updates that benefit everyone in the organization.\n\n"
+            "Thank you for contributing to our continuous improvement.\n\n"
+            "Best regards,\n"
+            "People Operations"
+        )
+    elif any(kw in p_lower for kw in ["policy", "procedure", "update", "handbook"]):
+        body = (
+            "Dear {name},\n\n"
+            "Please be advised of an important update to our company policies and operational guidelines.\n\n"
+            f"Policy Update Details: {clean_prompt}\n\n"
+            "We ask that you review these changes carefully to ensure complete alignment across all teams. If you have any questions or require clarification on how these updates apply to your role, please reach out to us.\n\n"
+            "Thank you for your cooperation and commitment to maintaining our professional standards.\n\n"
+            "Sincerely,\n"
+            "HR Compliance & Policy Team"
+        )
+    else:
+        body = (
+            "Dear {name},\n\n"
+            "We are reaching out to share an important company-wide update and announcement with you.\n\n"
+            f"Details: {clean_prompt}\n\n"
+            "We appreciate your dedication, focus, and the hard work you bring to our organization every single day. If you have any questions or feedback regarding this announcement, please feel free to reach out to the HR team.\n\n"
+            "Sincerely,\n"
+            "The HR Team"
+        )
+
+    return {"success": True, "subject": subject, "body": body, "source": "template"}
+
+
+def draft_email(api_key: str, prompt: str) -> dict:
+    """Draft an email from a prompt. Uses Gemini if available, otherwise falls back."""
+    # Ensure api_key is valid and not a placeholder or string representation of null/none
+    if api_key and api_key.strip().lower() not in ('none', 'null', 'undefined', 'your_api_key_here', 'api_key_here'):
+        result = call_gemini(api_key, GEMINI_EMAIL_DRAFT_SYSTEM, f"Draft an email based on: {prompt}")
+        if result["success"]:
+            try:
+                content = result["content"].strip()
+                if "```json" in content:
+                    content = content.split("```json")[1].split("```")[0].strip()
+                elif "```" in content:
+                    content = content.split("```")[1].split("```")[0].strip()
+                data = json.loads(content)
+                if "subject" in data and "body" in data:
+                    return {"success": True, "subject": data["subject"], "body": data["body"], "source": "gemini"}
+            except Exception as e:
+                print(f"[AI] Failed to parse generated email JSON: {e}")
+                
+    return draft_email_template(prompt)

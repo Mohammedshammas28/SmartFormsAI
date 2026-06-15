@@ -74,6 +74,20 @@
                 </div>
             </div>
 
+            <!-- SMTP Configuration Menu Card -->
+            <div class="settings-menu-card" onclick="openModal('smtpModal')">
+                <div class="settings-card-icon settings-icon-blue" style="background: rgba(14, 165, 233, 0.1); color: #0ea5e9;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="settings-menu-card-content">
+                    <h4>SMTP Configuration</h4>
+                    <p>Setup real email delivery server</p>
+                </div>
+                <div class="settings-menu-card-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9,18 15,12 9,6"/></svg>
+                </div>
+            </div>
+
             <!-- Danger Zone Menu Card -->
             <div class="settings-menu-card" onclick="openModal('dangerModal')">
                 <div class="settings-card-icon settings-icon-red">
@@ -92,6 +106,96 @@
 </div>
 
 <!-- ================= MODALS ================= -->
+
+<!-- SMTP Configuration Modal -->
+<div class="modal-overlay" id="smtpModal" style="display:none" onclick="if (event.target === this) closeModal('smtpModal')">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="settings-card-icon settings-icon-blue" style="width:36px; height:36px; background: rgba(14, 165, 233, 0.1); color: #0ea5e9; justify-content:center; align-items:center; display:flex; border-radius:8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <h3>SMTP Configuration</h3>
+            </div>
+            <button class="modal-close" onclick="closeModal('smtpModal')">×</button>
+        </div>
+        <form method="POST" class="settings-form" id="smtpConfigForm">
+            <div class="modal-body">
+                <input type="hidden" name="action" value="smtp_config">
+                
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom: 20px;">
+                    Configure your outgoing SMTP server credentials to enable real email delivery. Leaving these fields blank will fallback to environment variables in your <code>.env</code> file.
+                </p>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label">SMTP Server Host</label>
+                        <input type="text" name="smtp_server" id="smtpServer" class="form-input" 
+                               value="{{ user.smtp_server or '' }}" placeholder="e.g. smtp.gmail.com">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label">SMTP Port</label>
+                        <input type="number" name="smtp_port" id="smtpPort" class="form-input" 
+                               value="{{ user.smtp_port or 587 }}" placeholder="e.g. 587">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label">SMTP Username</label>
+                        <input type="text" name="smtp_user" id="smtpUser" class="form-input" 
+                               value="{{ user.smtp_user or '' }}" placeholder="e.g. user@gmail.com">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label">SMTP Password</label>
+                        <div class="input-with-toggle">
+                            <input type="password" name="smtp_password" id="smtpPassword" class="form-input" 
+                                   value="{{ user.smtp_password or '' }}" placeholder="SMTP password or app password">
+                            <button type="button" class="input-toggle-btn" onclick="togglePassword('smtpPassword', this)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label">Sender Name</label>
+                        <input type="text" name="smtp_sender_name" id="smtpSenderName" class="form-input" 
+                               value="{{ user.smtp_sender_name or '' }}" placeholder="e.g. SmartForms HR">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label">Sender Email</label>
+                        <input type="email" name="smtp_sender_email" id="smtpSenderEmail" class="form-input" 
+                               value="{{ user.smtp_sender_email or '' }}" placeholder="e.g. noreply@yourdomain.com">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Connection Security</label>
+                    <select name="smtp_security" id="smtpSecurity" class="form-input" style="background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; height: auto; padding: 0.625rem 0.875rem;">
+                        <option value="TLS" {% if user.smtp_security == 'TLS' or not user.smtp_security %}selected{% endif %}>STARTTLS (usually port 587 or 25)</option>
+                        <option value="SSL" {% if user.smtp_security == 'SSL' %}selected{% endif %}>SSL/TLS (usually port 465)</option>
+                        <option value="None" {% if user.smtp_security == 'None' %}selected{% endif %}>None (unencrypted, port 25 or 8025)</option>
+                    </select>
+                </div>
+
+                <!-- Connection test response container -->
+                <div id="smtpTestResult" style="display: none; margin-top: 15px; padding: 12px; border-radius: var(--radius-md); font-size: 13.5px;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <button type="button" class="btn btn-secondary" id="btnTestSmtp" style="display: flex; align-items: center; gap: 8px;">
+                    <span id="testSmtpBtnText">Test Connection</span>
+                    <div id="testSmtpSpinner" class="spinner" style="display: none; width: 14px; height: 14px; border-width: 2px; border-color: rgba(0,0,0,0.1); border-top-color: var(--primary);"></div>
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('smtpModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Config</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Security Modal -->
 <div class="modal-overlay" id="securityModal" style="display:none" onclick="if (event.target === this) closeModal('securityModal')">
@@ -295,11 +399,81 @@ function checkStrength(pw) {
     label.style.color = lvl.color;
 }
 
+    // SMTP connection testing script
+    const btnTestSmtp = document.getElementById('btnTestSmtp');
+    if (btnTestSmtp) {
+        btnTestSmtp.addEventListener('click', function() {
+            const server = document.getElementById('smtpServer').value.trim();
+            const port = document.getElementById('smtpPort').value.trim();
+            const user = document.getElementById('smtpUser').value.trim();
+            const password = document.getElementById('smtpPassword').value.trim();
+            const security = document.getElementById('smtpSecurity').value;
+            const resultDiv = document.getElementById('smtpTestResult');
+            const spinner = document.getElementById('testSmtpSpinner');
+            const btnText = document.getElementById('testSmtpBtnText');
+            
+            if (!server) {
+                alert('Please enter SMTP Server Host before testing.');
+                return;
+            }
+            
+            btnTestSmtp.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Testing...';
+            resultDiv.style.display = 'none';
+            
+            fetch('/settings/test_smtp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    smtp_server: server,
+                    smtp_port: port,
+                    smtp_user: user,
+                    smtp_password: password,
+                    smtp_security: security
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnTestSmtp.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = 'Test Connection';
+                
+                resultDiv.style.display = 'block';
+                if (data.success) {
+                    resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
+                    resultDiv.style.color = '#10b981';
+                    resultDiv.style.border = '1px solid rgba(16, 185, 129, 0.2)';
+                    resultDiv.textContent = data.message;
+                } else {
+                    resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+                    resultDiv.style.color = '#ef4444';
+                    resultDiv.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+                    resultDiv.textContent = 'Connection failed: ' + data.error;
+                }
+            })
+            .catch(err => {
+                btnTestSmtp.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = 'Test Connection';
+                
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+                resultDiv.style.color = '#ef4444';
+                resultDiv.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+                resultDiv.textContent = 'Error contacting server: ' + err;
+            });
+        });
+    }
+
 // Close modals on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeModal('securityModal');
         closeModal('aiModal');
+        closeModal('smtpModal');
         closeModal('dangerModal');
     }
 });

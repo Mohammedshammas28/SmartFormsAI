@@ -47,6 +47,7 @@ def create_app():
     from routes.hr_announcements import hr_announcements_bp
     from routes.hr_documents import hr_documents_bp
     from routes.hr_orgchart import hr_orgchart_bp
+    from routes.hr_mailer import hr_mailer_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -60,6 +61,7 @@ def create_app():
     app.register_blueprint(hr_announcements_bp)
     app.register_blueprint(hr_documents_bp)
     app.register_blueprint(hr_orgchart_bp)
+    app.register_blueprint(hr_mailer_bp)
 
     return app
 

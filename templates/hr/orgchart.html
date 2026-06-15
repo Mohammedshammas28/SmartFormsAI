@@ -68,6 +68,10 @@
                 <input type="text" name="department" class="form-input" placeholder="Engineering">
             </div>
             <div style="flex: 1; min-width: 200px;">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" placeholder="john.doe@company.com">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
                 <label class="form-label">Manager</label>
                 <select name="manager_id" class="form-input">
                     <option value="">None (Top Level)</option>
@@ -101,6 +105,7 @@
                         <th>Name</th>
                         <th>Position</th>
                         <th>Department</th>
+                        <th>Email</th>
                         <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
@@ -110,6 +115,7 @@
                         <td style="font-weight: 500;">{{ emp.name }}</td>
                         <td class="text-secondary">{{ emp.position }}</td>
                         <td class="text-secondary">{{ emp.department }}</td>
+                        <td class="text-secondary">{{ emp.email }}</td>
                         <td style="text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
                             <a href="{{ url_for('hr_orgchart.edit_employee', id=emp.id) }}" class="btn btn-secondary btn-sm">Edit</a>
                             <form action="{{ url_for('hr_orgchart.delete_employee', id=emp.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete {{ emp.name }}? This action cannot be undone.');">
@@ -119,7 +125,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="text-center" style="padding: 2rem;">No employees to manage.</td>
+                        <td colspan="5" class="text-center" style="padding: 2rem;">No employees to manage.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -15,6 +15,9 @@
         
         <label class="form-label" style="margin-top: 1rem;">Department</label>
         <input type="text" name="department" class="form-input" value="{{ employee.department }}">
+
+        <label class="form-label" style="margin-top: 1rem;">Email</label>
+        <input type="email" name="email" class="form-input" value="{{ employee.email or '' }}">
         
         <label class="form-label" style="margin-top: 1rem;">Manager</label>
         <select name="manager_id" class="form-input">

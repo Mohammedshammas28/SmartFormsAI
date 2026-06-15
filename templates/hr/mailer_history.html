@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Mailer History — SmartForms AI{% endblock %}
+{% block page_title %}Bulk Mailer History{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('hr_mailer.index') }}" class="btn btn-primary btn-sm" style="display: flex; align-items: center; gap: 0.5rem;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+    Compose New Email
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title" style="margin-bottom: 1.5rem;">Sent Email Campaigns</h2>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Subject</th>
+                    <th>Recipients Count</th>
+                    <th>Sender</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for campaign in campaigns %}
+                <tr>
+                    <td style="font-weight: 500; font-size: 0.9rem;">
+                        {{ (campaign.local_created_at|string)[:16] if campaign.local_created_at else '' }}
+                    </td>
+                    <td style="font-weight: 500;">
+                        {{ campaign.subject }}
+                    </td>
+                    <td>
+                        <span class="badge" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); font-size: 0.8rem; font-weight: 600;">
+                            {{ campaign.recipient_count }} recipient(s)
+                        </span>
+                    </td>
+                    <td class="text-secondary" style="font-size: 0.9rem;">
+                        {{ campaign.sender_name }}
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('hr_mailer.detail', id=campaign.id) }}" class="btn btn-secondary btn-sm">View Details</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="padding: 3rem 0; text-align: center;">
+                        <div class="empty-state">
+                            <div class="empty-icon">✉️</div>
+                            <h3>No Emails Sent Yet</h3>
+                            <p>Get started by composing your first bulk email campaign.</p>
+                            <a href="{{ url_for('hr_mailer.index') }}" class="btn btn-primary" style="margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                Compose Message
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

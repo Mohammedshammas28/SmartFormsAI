@@ -61,6 +61,31 @@ def index():
             db.commit()
             flash('API key saved successfully.', 'success')
         
+        elif action == 'smtp_config':
+            smtp_server = request.form.get('smtp_server', '').strip()
+            smtp_port = request.form.get('smtp_port', '587').strip()
+            smtp_user = request.form.get('smtp_user', '').strip()
+            smtp_password = request.form.get('smtp_password', '').strip()
+            smtp_sender_name = request.form.get('smtp_sender_name', '').strip()
+            smtp_sender_email = request.form.get('smtp_sender_email', '').strip().lower()
+            smtp_security = request.form.get('smtp_security', 'TLS').strip()
+            
+            try:
+                smtp_port_val = int(smtp_port)
+            except ValueError:
+                smtp_port_val = 587
+                
+            db.execute('''
+                UPDATE users 
+                SET smtp_server = ?, smtp_port = ?, smtp_user = ?, smtp_password = ?, 
+                    smtp_sender_name = ?, smtp_sender_email = ?, smtp_security = ?, 
+                    updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?
+            ''', (smtp_server, smtp_port_val, smtp_user, smtp_password, 
+                  smtp_sender_name, smtp_sender_email, smtp_security, session['user_id']))
+            db.commit()
+            flash('SMTP configuration saved successfully.', 'success')
+        
         return redirect(url_for('settings.index'))
     
     user = get_current_user()
@@ -74,3 +99,40 @@ def index():
         ai_status = 'template'
     return render_template('settings/index.html', user=user, initials=initials,
                            env_gemini_key=env_gemini_key, ai_status=ai_status)
+
+@settings_bp.route('/settings/test_smtp', methods=['POST'])
+@login_required
+def test_smtp():
+    data = request.get_json() or {}
+    smtp_server = data.get('smtp_server', '').strip()
+    smtp_port = data.get('smtp_port', '587').strip()
+    smtp_user = data.get('smtp_user', '').strip()
+    smtp_password = data.get('smtp_password', '').strip()
+    smtp_security = data.get('smtp_security', 'TLS').strip()
+    
+    if not smtp_server:
+        return jsonify({'success': False, 'error': 'SMTP server is required.'}), 400
+        
+    try:
+        port = int(smtp_port)
+    except ValueError:
+        return jsonify({'success': False, 'error': 'Invalid SMTP port.'}), 400
+        
+    import smtplib
+    try:
+        if smtp_security == 'SSL':
+            server = smtplib.SMTP_SSL(smtp_server, port, timeout=7)
+        else:
+            server = smtplib.SMTP(smtp_server, port, timeout=7)
+            server.ehlo()
+            if smtp_security == 'TLS':
+                server.starttls()
+                server.ehlo()
+                
+        if smtp_user and smtp_password:
+            server.login(smtp_user, smtp_password)
+            
+        server.quit()
+        return jsonify({'success': True, 'message': 'SMTP connection and login successful!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})

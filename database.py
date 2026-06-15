@@ -122,8 +122,30 @@ def init_db(app):
                 name TEXT NOT NULL,
                 position TEXT NOT NULL,
                 department TEXT DEFAULT '',
+                email TEXT DEFAULT '',
                 manager_id INTEGER,
                 FOREIGN KEY (manager_id) REFERENCES employees(id) ON DELETE SET NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS sent_emails (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender_id INTEGER NOT NULL,
+                subject TEXT NOT NULL,
+                body TEXT NOT NULL,
+                recipients TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS sent_email_recipients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sent_email_id INTEGER NOT NULL,
+                recipient_email TEXT NOT NULL,
+                recipient_name TEXT NOT NULL,
+                personalized_body TEXT NOT NULL,
+                status TEXT DEFAULT 'Sent',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (sent_email_id) REFERENCES sent_emails(id) ON DELETE CASCADE
             );
         ''')
         
@@ -138,6 +160,27 @@ def init_db(app):
             db.execute("ALTER TABLE users ADD COLUMN is_employee INTEGER DEFAULT 0")
         except sqlite3.OperationalError:
             pass
+
+        # Migration to add email column to employees table
+        try:
+            db.execute("ALTER TABLE employees ADD COLUMN email TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+
+        # Migration to add SMTP fields to users table
+        for col, col_type in [
+            ('smtp_server', "TEXT DEFAULT ''"),
+            ('smtp_port', "INTEGER DEFAULT 587"),
+            ('smtp_user', "TEXT DEFAULT ''"),
+            ('smtp_password', "TEXT DEFAULT ''"),
+            ('smtp_sender_name', "TEXT DEFAULT ''"),
+            ('smtp_sender_email', "TEXT DEFAULT ''"),
+            ('smtp_security', "TEXT DEFAULT 'TLS'")
+        ]:
+            try:
+                db.execute(f"ALTER TABLE users ADD COLUMN {col} {col_type}")
+            except sqlite3.OperationalError:
+                pass
             
         db.commit()
         db.close()
