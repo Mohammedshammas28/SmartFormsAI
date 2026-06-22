@@ -1,5 +1,7 @@
 # SmartForms AI
 **AI-Powered Form Builder & Response Intelligence Platform**
+<img width="1898" height="857" alt="image" src="https://github.com/user-attachments/assets/8713885f-0009-4db4-8620-ee2c4491437c" />
+
 
 ## Quick Start
 
