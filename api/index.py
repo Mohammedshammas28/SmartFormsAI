@@ -8,3 +8,6 @@ if ROOT_DIR not in sys.path:
 
 from app import app
 
+# Export both app and handler for maximum compatibility with Vercel's Python runtime
+handler = app
+

@@ -4,7 +4,8 @@
     "api/index.py": {
       "includeFiles": [
         "templates/**",
-        "static/**"
+        "static/**",
+        "routes/**"
       ]
     }
   },
