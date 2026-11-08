@@ -83,13 +83,6 @@ def create_app():
     app.register_blueprint(hr_orgchart_bp)
     app.register_blueprint(hr_mailer_bp)
 
-    @app.route('/api/index')
-    def vercel_entry():
-        from flask import redirect, url_for, session
-        if 'user_id' in session:
-            return redirect(url_for('dashboard.index'))
-        return redirect(url_for('auth.login'))
-
     return app
 
 app = create_app()
