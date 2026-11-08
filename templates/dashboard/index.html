@@ -14,7 +14,8 @@
     <!-- Welcome Banner -->
     <div class="welcome-banner">
         <div class="welcome-text">
-            <h1><span id="greeting-text" data-suffix=", {{ user.name.split()[0] }} 👋">Good day, {{ user.name.split()[0] }} 👋</span></h1>
+            {% set first_name = user.name.split()[0] if user and user.name else 'there' %}
+            <h1><span id="greeting-text" data-suffix=", {{ first_name }} 👋">Good day, {{ first_name }} 👋</span></h1>
             <p>Here's what's happening with your forms today.</p>
         </div>
         <a href="/forms/new" class="btn btn-primary">
