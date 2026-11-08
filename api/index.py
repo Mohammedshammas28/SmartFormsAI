@@ -12,27 +12,32 @@ from app import app
 class VercelPathMiddleware:
     """
     WSGI Middleware to restore original request paths from Vercel's edge rewrites.
-    When Vercel rewrites requests to /api/index, the original path is provided via:
-    1. HTTP_X_MATCHED_PATH header
-    2. ?path=$1 query parameter
+    vercel.json rewrites incoming requests:
+      source: /(.*) -> destination: /api/index?path=$1
+    This middleware extracts the real intended path from ?path= and sets PATH_INFO,
+    cleaning the query string so Flask and Jinja2 route correctly.
     """
     def __init__(self, wsgi_app):
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        matched_path = environ.get('HTTP_X_MATCHED_PATH')
-        if matched_path and matched_path != '/api/index':
-            environ['PATH_INFO'] = matched_path.split('?')[0]
-        elif 'QUERY_STRING' in environ and 'path=' in environ['QUERY_STRING']:
-            qs = urllib.parse.parse_qs(environ['QUERY_STRING'])
-            if 'path' in qs and qs['path'][0]:
-                p = qs['path'][0]
-                environ['PATH_INFO'] = p if p.startswith('/') else '/' + p
+        query_string = environ.get('QUERY_STRING', '')
+        if 'path=' in query_string:
+            qs = urllib.parse.parse_qs(query_string, keep_blank_values=True)
+            requested_path = qs.get('path', [''])[0]
+            if requested_path:
+                environ['PATH_INFO'] = requested_path if requested_path.startswith('/') else '/' + requested_path
+            else:
+                environ['PATH_INFO'] = '/'
+            
+            # Clean internal 'path' query param so it doesn't pollute request.args
+            cleaned_params = [(k, v) for k, vs in qs.items() if k != 'path' for v in vs]
+            environ['QUERY_STRING'] = urllib.parse.urlencode(cleaned_params)
         elif environ.get('PATH_INFO') in ('/api/index', '/api/index/'):
             environ['PATH_INFO'] = '/'
 
         return self.wsgi_app(environ, start_response)
 
-# Wrap app so Vercel forwards every route correctly
+# Export WSGI callable for Vercel Python runtime
 handler = VercelPathMiddleware(app)
 app = handler
