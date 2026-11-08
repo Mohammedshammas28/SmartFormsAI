@@ -56,5 +56,11 @@ def index():
 @hr_documents_bp.route('/download/<filename>')
 @employee_required
 def download(filename):
+    clean_name = werkzeug.utils.secure_filename(filename)
     upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents')
-    return send_from_directory(upload_dir, werkzeug.utils.secure_filename(filename), as_attachment=True)
+    target_path = os.path.join(upload_dir, clean_name)
+    if not os.path.exists(target_path):
+        fallback_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'documents')
+        if os.path.exists(os.path.join(fallback_dir, clean_name)):
+            upload_dir = fallback_dir
+    return send_from_directory(upload_dir, clean_name, as_attachment=True)

@@ -30,3 +30,6 @@ powershell.bat
 # OS Generated Files
 .DS_Store
 Thumbs.db
+
+# Vercel Deployment Artifacts
+.vercel/

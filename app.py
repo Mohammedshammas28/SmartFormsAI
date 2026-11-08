@@ -30,16 +30,36 @@ def _load_env_file(path):
 _load_env_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 def create_app():
-    app = Flask(__name__)
-    app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
-    app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(base_dir, 'templates'),
+        static_folder=os.path.join(base_dir, 'static')
+    )
+    # Predictable fallback ensures sessions survive serverless cold starts
+    app.secret_key = os.environ.get('SECRET_KEY') or 'smartforms-ai-secret-key-production'
+    
+    # Serverless (Vercel / AWS Lambda) environment detection
+    is_serverless = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
+    default_upload = '/tmp/uploads' if is_serverless else os.path.join(base_dir, 'static', 'uploads')
+    default_db = '/tmp/smartforms.db' if is_serverless else os.path.join(base_dir, 'instance', 'smartforms.db')
+
+    app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', default_upload)
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file upload
-    app.config['DATABASE'] = os.path.join(os.path.dirname(__file__), 'instance', 'smartforms.db')
+    app.config['DATABASE'] = os.environ.get('DATABASE_PATH', default_db)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(__file__), 'instance'), exist_ok=True)
+    # Safely create directories (ignore read-only errors on serverless)
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except OSError:
+        pass
+
+    try:
+        os.makedirs(os.path.dirname(app.config['DATABASE']), exist_ok=True)
+    except OSError:
+        pass
 
     with app.app_context():
         init_db(app)
