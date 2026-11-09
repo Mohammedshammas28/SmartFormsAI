@@ -17,11 +17,13 @@ def _load_env_file(path):
         with open(path, 'r') as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, _, value = line.partition('=')
+                if not line or line.startswith('#'):
+                    continue
+                sep = '=' if '=' in line else (':' if ':' in line else None)
+                if sep:
+                    key, _, value = line.partition(sep)
                     key = key.strip()
-                    value = value.strip()
-                    # Always overwrite to ensure auto-reloader picks up .env changes
+                    value = value.strip().strip("'\"")
                     if key:
                         os.environ[key] = value
     except FileNotFoundError:
